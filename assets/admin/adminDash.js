@@ -72,6 +72,20 @@ function updateAppointmentStatus(appointmentId, newStatus) {
     });
 }
 
+function filterPatients() {
+  const search = document.getElementById("searchPatientName").value.toLowerCase();
+  const rows = document.querySelectorAll("#patientTable tbody tr");
+
+  rows.forEach((row) => {
+    const columns = row.querySelectorAll("td");
+    if (columns.length < 3) return; // Ensure there are enough columns to avoid errors
+    const matchesName = columns[1].innerText.toLowerCase().includes(search);
+    const matchesPhone = columns[2].innerText.toLowerCase().includes(search);
+
+    row.style.display = matchesName || matchesPhone ? "" : "none";
+  });
+}
+
 function filterAppointments() {
   const doctorId = document.getElementById("searchDoctorId").value.toLowerCase();
   const patientId = document.getElementById("searchPatientId").value.toLowerCase();
@@ -99,5 +113,34 @@ function filterAppointments() {
     if (status && rowStatus !== status) show = false;
 
     row.style.display = show ? "" : "none";
+  });
+}
+
+function filterDoctors() {
+  const searchName = document.getElementById("searchDoctorName").value.toLowerCase();
+  const specialtyFilter = document.getElementById("doctorSpecialtyFilter").value.toLowerCase();
+  const rows = document.querySelectorAll("#doctorTable tbody tr");
+
+  rows.forEach((row) => {
+    const columns = row.querySelectorAll("td");
+    if (columns.length < 3) return; // Ensure there are enough columns to avoid errors
+    const doctorNameCell = columns[1].innerText.toLowerCase();
+    const specialtyCell = columns[2].innerText.toLowerCase();
+
+    const matchesName = doctorNameCell.includes(searchName);
+    const matchesSpecialty = specialtyFilter ? specialtyCell.includes(specialtyFilter) : true;
+
+    row.style.display = matchesName && matchesSpecialty ? "" : "none";
+  });
+}
+
+function searchMedicine() {
+  const medicineName = document.getElementById("medicineSearchInput").value.toLowerCase();
+  const rows = document.querySelectorAll("#medicineTable tbody tr");
+  rows.forEach((row) => {
+    const columns = row.querySelectorAll("td");
+    if (columns.length < 2) return; // Ensure there are enough columns to avoid errors
+    const medicineNameCell = columns[1].innerText.toLowerCase();
+    row.style.display = medicineNameCell.includes(medicineName) ? "" : "none";
   });
 }

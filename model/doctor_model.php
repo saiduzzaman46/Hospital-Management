@@ -139,3 +139,18 @@ function get_name_by_aid($appointmentId)
         return false;
     }
 }
+function getAllMedicines()
+{
+    global $conn;
+    $query = "SELECT * FROM medicines";
+    $result = mysqli_query($conn, $query);
+    $medicines = [];
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $medicines[] = $row;
+        }
+    }
+
+    return $medicines;
+}

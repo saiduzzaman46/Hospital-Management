@@ -10,10 +10,10 @@
 <?php
 session_start();
 
-if (!isset($_COOKIE['doctor_id'])) {
-  header("Location: ../login/login.php");
-  exit();
-}
+// if (!isset($_COOKIE['doctor_id'])) {
+//   header("Location: ../login/login.php");
+//   exit();
+// }
 
 require_once '../../model/doctor_model.php';
 require_once '../../model/time_formate.php';
@@ -55,6 +55,7 @@ $upcoming_appointments_count = !empty($upcoming_doctor_appointments) ? count($up
 $past_appointments_count = !empty($past_doctor_appointments) ? count($past_doctor_appointments) : 0;
 
 $all_patients_data = get_all_patients_data($currentDoctorId);
+$medicines = getAllMedicines();
 
 if (!$all_patients_data) {
   $all_patients_data = []; // Ensure it's an empty array if no data found
@@ -107,7 +108,7 @@ $current_patient_info_for_records = get_current_patients_data($appointment_id);
           <li><a href="?section=appointments" class="menu-item <?php echo $section === 'appointments' ? 'active' : ''; ?>" data-content="appointments"><i class="fas fa-calendar-alt"></i> My Appointments</a></li>
           <li><a href="?section=patients" class="menu-item <?php echo $section === 'patients' ? 'active' : ''; ?>" data-content="patients"><i class="fas fa-user-injured"></i> My Patients</a></li>
           <li><a href="?section=records" class="menu-item <?php echo $section === 'records' || $section === 'prescriptions' || $section === 'add-prescription' ? 'active' : ''; ?>" data-content="records"><i class="fas fa-file-medical-alt"></i> Patient Records</a></li>
-          <li><a href="?section=prescribe_medicines" class="menu-item <?php echo $section === 'prescribe_medicines' ? 'active' : ''; ?>" data-content="prescribe_medicines"><i class="fas fa-pills"></i> Prescribe Medicines</a></li>
+          <li><a href="?section=prescribe_medicines" class="menu-item <?php echo $section === 'prescribe_medicines' ? 'active' : ''; ?>" data-content="prescribe_medicines"><i class="fas fa-pills"></i> Medicines</a></li>
           <li><a href="?section=profile" class="menu-item <?php echo $section === 'profile' ? 'active' : ''; ?>" data-content="profile"><i class="fas fa-user-cog"></i> Profile Settings</a></li>
           <li> <a href="../../controller/logoutDoctor.php" class="menu-item"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
@@ -380,8 +381,8 @@ $current_patient_info_for_records = get_current_patients_data($appointment_id);
               <p><strong>Gender:</strong> <?php echo htmlspecialchars($current_patient_info_for_records['patients_gender'] ?? 'N/A'); ?></p>
             </div>
             <div class="action-area" style="justify-content: flex-start; margin-top: 2rem;">
-              <a href="?section=prescriptions&patient_id=<?php echo htmlspecialchars($patient_id_for_records); ?>" class="button button-secondary">View Prescriptions</a>
-              <a href="?section=add-prescription&patient_id=<?php echo htmlspecialchars($patient_id_for_records); ?>" class="button button-outline">Add New Prescription</a>
+              <a href="?section=prescriptions&appoint_id=<?php echo htmlspecialchars($current_patient_info_for_records['aid'] ?? 'N/A'); ?>" class="button button-secondary">View Prescriptions</a>
+              <a href="?section=add-prescription&appoint_id=<?php echo htmlspecialchars($current_patient_info_for_records['aid'] ?? 'N/A'); ?>" class="button button-outline">Add New Prescription</a>
               <a href="?section=patients" class="button">Back to Patients</a>
             </div>
           <?php else: ?>
@@ -398,13 +399,13 @@ $current_patient_info_for_records = get_current_patients_data($appointment_id);
 
         <!-- Prescriptions Section -->
         <section id="content-prescriptions" class="dashboard-section" style="<?php echo $section === 'prescriptions' ? '' : 'display: none'; ?>">
-          <h2 id="prescriptionsHeading">Prescriptions for <?php echo htmlspecialchars($current_patient_name_for_display); ?></h2>
+          <h2 id="prescriptionsHeading">Prescriptions for <?php echo htmlspecialchars($current_patient_info_for_records['patientsName']); ?></h2>
           <p>Review and manage current prescriptions, or add new ones.</p>
 
           <div class="prescription-details" id="currentPrescriptionsList">
             <h3>Current Prescriptions</h3>
             <?php
-            $current_patient_prescriptions = $patient_prescriptions_data[$patient_id_for_records] ?? [];
+            // $current_patient_prescriptions = $patient_prescriptions_data[$patient_id_for_records] ?? [];
             if (!empty($current_patient_prescriptions)): ?>
               <ul>
                 <?php foreach ($current_patient_prescriptions as $rx): ?>
@@ -437,7 +438,7 @@ $current_patient_info_for_records = get_current_patients_data($appointment_id);
 
           <div class="form-section">
             <form id="addPrescriptionForm">
-              <input type="hidden" id="addPrescriptionPatientId" name="patient_id" value="<?php echo htmlspecialchars($patient_id_for_records); ?>" />
+              <input type="hidden" id="addPrescriptionPatientId" name="patient_id" value="<?php echo htmlspecialchars($current_patient_info_for_records['pid']); ?>" />
 
               <!-- Conditional Patient Selection if coming from Prescribe Medicines -->
               <div id="patientSelectionGroup" class="form-group">
@@ -510,15 +511,14 @@ $current_patient_info_for_records = get_current_patients_data($appointment_id);
                   <th>Price</th>
                   <th>Stock</th>
                   <th>Manufacturer</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <?php
-                if (!empty($all_medicines_data)): ?>
-                  <?php foreach ($all_medicines_data as $med): ?>
+                if (!empty($medicines)): ?>
+                  <?php foreach ($medicines as $med): ?>
                     <tr>
-                      <td><?php echo htmlspecialchars($med['id']); ?></td>
+                      <td><?php echo htmlspecialchars($med['mid']); ?></td>
                       <td><?php echo htmlspecialchars($med['name']); ?></td>
                       <td><?php echo htmlspecialchars($med['genericName']); ?></td>
                       <td><?php echo htmlspecialchars($med['strength']); ?></td>
@@ -526,11 +526,6 @@ $current_patient_info_for_records = get_current_patients_data($appointment_id);
                       <td>$<?php echo htmlspecialchars(number_format($med['price'], 2)); ?></td>
                       <td><?php echo htmlspecialchars($med['stock']); ?></td>
                       <td><?php echo htmlspecialchars($med['manufacturer']); ?></td>
-                      <td>
-                        <div class="action-buttons">
-                          <a href="?section=add-prescription&medicine_id=<?php echo htmlspecialchars($med['id']); ?>" class="button button-secondary">Prescribe</a>
-                        </div>
-                      </td>
                     </tr>
                   <?php endforeach; ?>
                 <?php else: ?>

@@ -47,6 +47,7 @@ $dosageForms = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream'];
 $patients = adminDashboardPatients();
 $doctors = adminDashboardDoctors();
 $appointments = adminDashboardAppointments();
+$medicines = getAllMedicines();
 
 // 
 $doctorToEdit = null;
@@ -66,6 +67,10 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
     $patientToEdit = get_patient_by_id($patients, $_GET['id']);
 }
 
+$medicineToEdit = null;
+if ($section === 'medicine' && isset($_GET['action']) && $_GET['action'] === 'edit_medicine' && isset($_GET['id'])) {
+    $medicineToEdit = get_medicine_by_id($medicines, $_GET['id']);
+}
 
 
 
@@ -135,7 +140,7 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
                     </div>
                     <div class="card">
                         <h4>Total Medicines</h4> <!-- NEW -->
-                        <p id="totalMedicinesCount">0</p>
+                        <p id="totalMedicinesCount"><?php echo count($medicines); ?></p>
                         <!-- <button class="button" onclick="loadContent('medicines')">View Medicines</button> -->
                         <a class="button" href="?section=medicine">View Medicines</a>
                     </div>
@@ -161,6 +166,9 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
 
                 <div id="viewPatientsSection" style="<?php echo ($section === 'patients' && !$patientToEdit) ? '' : 'display: none'; ?>">
                     <h3>All Patients</h3>
+                    <div class="table-controls">
+                        <input type="text" style="width: 200px;" id="searchPatientName" placeholder="Search by Name/Phone..." class="form-group input" oninput="filterPatients()" />
+                    </div>
                     <div class="table-container">
                         <table class="data-table" id="patientTable">
                             <thead>
@@ -479,6 +487,16 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
 
                 <div id="viewDoctorsSection" style="<?php echo ($section === 'doctors' && !isset($_GET['action'])) || ($section === 'doctors' && $_GET['action'] == 'view') ? '' : 'display: none'; ?>">
                     <h3>Doctor List</h3>
+                    <div class="table-controls">
+                        <input type="text" id="searchDoctorName" placeholder="Search by Name..." class="form-group input" oninput="filterDoctors()" />
+                        <select id="doctorSpecialtyFilter" class="form-group input" onchange="filterDoctors()">
+                            <option value="">All Specialties</option>
+                            <?php foreach ($specialties as $specialty): ?>
+                                <option value="<?php echo htmlspecialchars($specialty); ?>"><?php echo htmlspecialchars($specialty); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+
+                    </div>
                     <div class="table-container">
                         <table class="data-table" id="doctorTable">
                             <thead>
@@ -651,7 +669,8 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="button button-secondary">Add Medicine</button>
-                            <button type="button" class="button button-outline" onclick="navigateTo('medicine', 'view')">Cancel</button>
+                            <a href="?section=medicine&action=view" class="button button-outline">Cancel</a>
+
                         </div>
                     </form>
 
@@ -665,6 +684,7 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="button button-secondary">Upload & Import</button>
+                                 <a href="?section=medicine&action=view" class="button button-outline">Cancel</a>
                             </div>
                         </form>
                         <?php
@@ -725,23 +745,24 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
                                 <textarea id="editMedicineDescription" name="description" rows="3" required><?php echo htmlspecialchars($medicineToEdit['description']); ?></textarea>
                             </div>
                             <div class="form-actions">
-                                <button type="submit" class="button button-secondary">Save Changes</button>
-                                <button type="button" class="button button-outline" onclick="navigateTo('medicine', 'view')">Cancel</button>
+                                <button type="submit" class="button button-secondary" name="updateMedicine">Save Changes</button>
+                                <a href="?section=medicine&action=view" class="button button-outline">Cancel</a>
                             </div>
                         </form>
                     <?php else: ?>
                         <p class="message-box message-error">Medicine data not found. Please select a valid medicine to edit.</p>
                         <div class="form-actions">
-                            <button type="button" class="button button-outline" onclick="navigateTo('medicine', 'view')">Back to Medicine List</button>
+                            <a href="?section=medicine&action=view" class="button button-outline">Back to Medicines List</a>
                         </div>
                     <?php endif; ?>
+                    <div id="editMedicineMessage" class="message-box"></div>
                 </div>
 
                 <!-- View Medicines Table -->
                 <div id="viewMedicinesSection" style="<?php echo ($section === 'medicine' && !isset($_GET['action'])) || ($section === 'medicine' && $_GET['action'] == 'view') ? '' : 'display: none'; ?>">
                     <h3>Medicine List</h3>
                     <div class="table-controls" style="margin-bottom: 1.6rem;">
-                        <input type="text" id="medicineSearchInput" onkeyup="filterTable('medicineTable', this.value)" placeholder="Search medicines..." class="form-group input" style="width: 100%; max-width: 400px;">
+                        <input type="text" id="medicineSearchInput" oninput="searchMedicine(this)" placeholder="Search medicines..." class="form-group input" style="width: 100%; max-width: 400px;">
                     </div>
                     <div class="table-container">
                         <table class="data-table" id="medicineTable">
@@ -789,7 +810,66 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
                     <div id="medicineMessage" class="message-box"></div>
                 </div>
             </section>
+            <!-- Admin Profile Section -->
+            <section id="content-profile" class="dashboard-section" style="<?php echo $section === 'profile' ? '' : 'display: none'; ?>">
+                <h2>Admin Profile Settings</h2>
+                <p>Manage your account details and security.</p>
 
+                <div class="form-section">
+                    <h3>Admin Information</h3>
+                    <form id="profileForm" method="POST" action="../../controller/admin_profile_con.php">
+                        <input type="hidden" name="admin_id" value="<?php echo htmlspecialchars($admin_id); ?>" />
+                        <div class="form-group">
+                            <label for="adminName">Admin Name</label>
+                            <input type="text" id="profileName" name="admin_name" value="<?php echo htmlspecialchars($admin_fname); ?>" <?php echo $editMode ? '' : 'disabled'; ?> required />
+
+                        </div>
+                        <div class="form-group">
+                            <label for="adminEmail">Email</label>
+                            <input type="email" id="profileEmail" name="admin_email" value="<?php echo htmlspecialchars($admin_email); ?>" <?php echo $editMode ? '' : 'disabled'; ?> required />
+
+                        </div>
+                        <div class="profile-action-buttons">
+                            <?php if (!$editMode): ?>
+                                <a href="?section=profile&edit=1" class="button" id="editProfileBtn">Edit Details</a>
+                            <?php else: ?>
+                                <button type="submit" class="button button-secondary" id="saveProfileBtn" name="submit-btn">Save Changes</button>
+                                <a href="?section=profile" class="button button-outline" id="cancelProfileBtn">Cancel</a>
+                            <?php endif; ?>
+                        </div>
+                    </form>
+                    <div id="adminProfileMessage" class="message-box" style="display: none;"></div>
+                </div>
+                <div class="form-section">
+                    <h3>Change Password</h3>
+                    <form id="passwordChangeForm" method="post" action="../../controller/change_admin_pass_con.php">
+                        <input type="hidden" name="admin_id" value="<?php echo htmlspecialchars($admin_id); ?>" />
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password:</label>
+                            <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password" required autocomplete="off" />
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password:</label>
+                            <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password (min 8 chars)" required autocomplete="off" minlength="8" />
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmNewPassword">Confirm New Password:</label>
+                            <input type="password" id="confirmNewPassword" name="confirmNewPassword" placeholder="Confirm new password" required autocomplete="off" minlength="8" />
+                        </div>
+                        <button type="submit" class="button">Change Password</button>
+                    </form>
+                    <?php
+                    // Display password change messages
+                    if (isset($_SESSION['password_change_message'])) {
+                        echo '<div id="passwordMessage" class="message-box ' . htmlspecialchars($_SESSION['password_change_message_type']) . '">' . htmlspecialchars($_SESSION['password_change_message']) . '</div>';
+                        unset($_SESSION['password_change_message']);
+                        unset($_SESSION['password_change_message_type']);
+                    } else {
+                        echo '<div id="passwordMessage" class="message-box"></div>';
+                    }
+                    ?>
+                </div>
+            </section>
 
             <!-- Logout Section -->
             <section id="content-logout" class="dashboard-section" style="<?php echo $section === 'logout' ? '' : 'display: none'; ?>">

@@ -26,6 +26,27 @@ function getmedicineLastId()
         $row = mysqli_fetch_assoc($result);
         return $row['mid'];
     } else {
-        return null; 
+        return null;
     }
+}
+function updateMedicine($mid, $name, $genericName, $strength, $dosageForm, $price, $stock, $manufacturer, $description)
+{
+    global $conn;
+    date_default_timezone_set('Asia/Dhaka');
+    $today = date('Y-m-d');
+
+    $query = "UPDATE `medicines` SET 
+        `name` = '$name', 
+        `genericName` = '$genericName', 
+        `strength` = '$strength', 
+        `dosageForm` = '$dosageForm', 
+        `price` = $price, 
+        `stock` = '$stock', 
+        `manufacturer` = '$manufacturer', 
+        `description` = '$description',
+        `update_at` = '$today'
+        WHERE `mid` = '$mid';";
+
+    $result = mysqli_query($conn, $query);
+    return $result ? true : false;
 }

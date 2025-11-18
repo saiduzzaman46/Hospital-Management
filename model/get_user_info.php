@@ -177,10 +177,10 @@ function get_doctor_info($conn, $did)
 
 function get_current_patient_info($conn, $appointmentId)
 {
-    $query = "SELECT p.email,p.address,a.aid,a.patientsName,a.patients_gender,a.patientsPhone 
+    $query = "SELECT p.pid, p.email,p.address,a.aid,a.patientsName,a.patients_gender,a.patientsPhone 
             FROM `patientsregister` AS p JOIN `appointments` 
             AS a ON p.pid = a.patient_id WHERE a.aid = '$appointmentId';";
-            
+
     $result = mysqli_query($conn, $query);
     if ($result && mysqli_num_rows($result) > 0) {
         return mysqli_fetch_assoc($result);

@@ -30,7 +30,7 @@ function adminDashboardDoctors()
               WHERE l.role = 'doctor'";
 
     $result = mysqli_query($conn, $query);
-    
+
     $doctors = [];
 
     if ($result && mysqli_num_rows($result) > 0) {
@@ -94,3 +94,30 @@ function get_patient_by_id($patients, $patientId)
     }
     return null;
 }
+
+function getAllMedicines()
+{
+    global $conn;
+    $query = "SELECT * FROM medicines";
+    $result = mysqli_query($conn, $query);
+    $medicines = [];
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $medicines[] = $row;
+        }
+    }
+
+    return $medicines;
+}
+function get_medicine_by_id($medicines, $mid)
+{
+    foreach ($medicines as $medicine) {
+        if ($medicine['mid'] == $mid) {
+            return $medicine;
+        }
+    }
+    return null;
+}
+
+
