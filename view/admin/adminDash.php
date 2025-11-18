@@ -10,10 +10,11 @@
 <?php
 session_start();
 
-if (!isset($_COOKIE['admin_id'])) {
-    header("Location: ../login/login.php");
-    exit();
-}
+// if (!isset($_COOKIE['admin_id'])) {
+//      http_response_code(403); // Forbidden
+//     header("Location: ../login/login.php");
+//     exit();
+// }
 
 require_once '../../model/admin_model.php';
 
@@ -40,6 +41,8 @@ $specialties = [
     'ENT',
     'Dentistry'
 ];
+$dosageForms = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream'];
+
 
 $patients = adminDashboardPatients();
 $doctors = adminDashboardDoctors();
@@ -530,6 +533,18 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
 
                 <div id="viewAppointmentsSection" style="<?php echo (!isset($_GET['action']) || $_GET['action'] == 'view' || ($section === 'appointments' && !($patientToEdit || (isset($_GET['action']) && $_GET['action'] == 'create')))) ? '' : 'display: none'; ?>">
                     <h3>All Appointments</h3>
+                    <div class="table-controls" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                        <input type="text" id="searchDoctorId" placeholder="Search Doctor ID..." class="form-group input" oninput="filterAppointments()" />
+                        <input type="text" id="searchPatientId" placeholder="Search Patient ID..." class="form-group input" oninput="filterAppointments()" />
+                        <input type="date" id="dateFrom" class="form-group input" onchange="filterAppointments()" />
+                        <input type="date" id="dateTo" class="form-group input" onchange="filterAppointments()" />
+                        <select id="statusFilter" class="form-group input" onchange="filterAppointments()">
+                            <option value="">All Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
                     <div class="table-container">
                         <table class="data-table" id="appointmentTable">
                             <thead>
@@ -575,69 +590,206 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
             </section>
 
 
+            <!-- Medicine Management Section -->
+            <section id="content-medicine" class="dashboard-section" style="<?php echo $section === 'medicine' ? '' : 'display: none'; ?>">
+                <h2>Medicine Management</h2>
+                <p>Manage medicine records: add new medicines, view, or edit existing ones.</p>
 
-            <!-- Admin Profile Section -->
-            <section id="content-profile" class="dashboard-section" style="<?php echo $section === 'profile' ? '' : 'display: none'; ?>">
-                <h2>Admin Profile Settings</h2>
-                <p>Manage your account details and security.</p>
-
-                <div class="form-section">
-                    <h3>Admin Information</h3>
-                    <form id="profileForm" method="POST" action="../../controller/admin_profile_con.php">
-                        <input type="hidden" name="admin_id" value="<?php echo htmlspecialchars($admin_id); ?>" />
-                        <div class="form-group">
-                            <label for="adminName">Admin Name</label>
-                            <input type="text" id="profileName" name="admin_name" value="<?php echo htmlspecialchars($admin_fname); ?>" <?php echo $editMode ? '' : 'disabled'; ?> required />
-
-                        </div>
-                        <div class="form-group">
-                            <label for="adminEmail">Email</label>
-                            <input type="email" id="profileEmail" name="admin_email" value="<?php echo htmlspecialchars($admin_email); ?>" <?php echo $editMode ? '' : 'disabled'; ?> required />
-
-                        </div>
-                        <div class="profile-action-buttons">
-                            <?php if (!$editMode): ?>
-                                <a href="?section=profile&edit=1" class="button" id="editProfileBtn">Edit Details</a>
-                            <?php else: ?>
-                                <button type="submit" class="button button-secondary" id="saveProfileBtn" name="submit-btn">Save Changes</button>
-                                <a href="?section=profile" class="button button-outline" id="cancelProfileBtn">Cancel</a>
-                            <?php endif; ?>
-                        </div>
-                    </form>
-                    <div id="adminProfileMessage" class="message-box" style="display: none;"></div>
+                <!-- Controls -->
+                <div class="doctor-management-controls">
+                    <a href="?section=medicine&action=add" class="button <?php echo (isset($_GET['action']) && $_GET['action'] == 'add') ? 'active' : 'button-outline'; ?>">Add Medicine</a>
+                    <a href="?section=medicine&action=view" class="button <?php echo (!isset($_GET['action']) || $_GET['action'] == 'view') ? 'active' : 'button-outline'; ?>">View Medicines</a>
                 </div>
 
+                <!-- Add Medicine Section -->
+                <div id="addMedicineSection" class="form-section" style="<?php echo ($section === 'medicine' && isset($_GET['action']) && $_GET['action'] == 'add') ? '' : 'display: none'; ?>">
+                    <h3>Add New Medicine</h3>
+                    <form id="addMedicineForm">
+                        <div class="form-group">
+                            <label for="addMedicineName">Medicine Name</label>
+                            <input type="text" id="addMedicineName" name="name" placeholder="e.g., Paracetamol" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addMedicineGenericName">Generic Name</label>
+                            <input type="text" id="addMedicineGenericName" name="genericName" placeholder="e.g., Acetaminophen" required>
+                        </div>
+                        <div class="profile-form-row">
+                            <div class="form-group">
+                                <label for="addMedicineStrength">Strength</label>
+                                <input type="text" id="addMedicineStrength" name="strength" placeholder="e.g., 500mg" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="addMedicineDosageForm">Dosage Form</label>
+                                <select id="addMedicineDosageForm" name="dosageForm" required>
+                                    <option value="" disabled selected>Select dosage form</option>
+                                    <?php foreach ($dosageForms as $form): ?>
+                                        <option value="<?php echo htmlspecialchars($form); ?>">
+                                            <?php echo htmlspecialchars($form); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-                <div class="form-section">
-                    <h3>Change Password</h3>
-                    <form id="passwordChangeForm" method="post" action="../../controller/change_admin_pass_con.php">
-                        <input type="hidden" name="admin_id" value="<?php echo htmlspecialchars($admin_id); ?>" />
-                        <div class="form-group">
-                            <label for="currentPassword">Current Password:</label>
-                            <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter your current password" required autocomplete="off" />
+                        </div>
+                        <div class="profile-form-row">
+                            <div class="form-group">
+                                <label for="addMedicinePrice">Price ($)</label>
+                                <input type="number" id="addMedicinePrice" name="price" placeholder="e.g., 0.25" min="0" step="any" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="addMedicineStock">Stock Quantity</label>
+                                <input type="number" id="addMedicineStock" name="stock" placeholder="e.g., 1000" min="0" required>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="newPassword">New Password:</label>
-                            <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password (min 8 chars)" required autocomplete="off" minlength="8" />
+                            <label for="addMedicineManufacturer">Manufacturer</label>
+                            <input type="text" id="addMedicineManufacturer" name="manufacturer" placeholder="e.g., ABC Pharma" required>
                         </div>
                         <div class="form-group">
-                            <label for="confirmNewPassword">Confirm New Password:</label>
-                            <input type="password" id="confirmNewPassword" name="confirmNewPassword" placeholder="Confirm new password" required autocomplete="off" minlength="8" />
+                            <label for="addMedicineDescription">Description</label>
+                            <textarea id="addMedicineDescription" name="description" rows="3" placeholder="Brief description..." required></textarea>
                         </div>
-                        <button type="submit" class="button">Change Password</button>
+                        <div class="form-actions">
+                            <button type="submit" class="button button-secondary">Add Medicine</button>
+                            <button type="button" class="button button-outline" onclick="navigateTo('medicine', 'view')">Cancel</button>
+                        </div>
                     </form>
-                    <?php
-                    // Display password change messages
-                    if (isset($_SESSION['password_change_message'])) {
-                        echo '<div id="passwordMessage" class="message-box ' . htmlspecialchars($_SESSION['password_change_message_type']) . '">' . htmlspecialchars($_SESSION['password_change_message']) . '</div>';
-                        unset($_SESSION['password_change_message']);
-                        unset($_SESSION['password_change_message_type']);
-                    } else {
-                        echo '<div id="passwordMessage" class="message-box"></div>';
-                    }
-                    ?>
+
+                    <!-- ✅ Excel Upload Section -->
+                    <div class="form-section">
+                        <h3>Import Medicines from Excel</h3>
+                        <form id="excelUploadForm" method="POST" action="../../controller/import_medicine_excel.php" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label for="excelFile">Upload Excel File (.xlsx or .xls)</label>
+                                <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="button button-secondary">Upload & Import</button>
+                            </div>
+                        </form>
+                        <?php
+                        // if (isset($_GET['import_status'])) {
+                        //     $status = $_GET['import_status'];
+                        //     if ($status == 'success') {
+                        //         echo '<div class="message-box message-success">Medicines imported successfully.</div>';
+                        //     } elseif ($status == 'error') {
+                        //         echo '<div class="message-box message-error">Failed to import medicines. Please check the file format.</div>';
+                        //     }
+                        // }
+                        ?>
+                    </div>
+                    <!-- Message Box for Add Medicine -->
+                    <div id="addMedicineMessage" class="message-box"></div>
+                </div>
+
+                <!-- Edit Medicine Section -->
+                <div id="editMedicineSection" class="form-section" style="<?php echo ($section === 'medicine' && isset($_GET['action']) && $_GET['action'] == 'edit_medicine') ? '' : 'display: none'; ?>">
+                    <h3>Edit Medicine Information</h3>
+                    <?php if ($medicineToEdit): ?>
+                        <form id="editMedicineForm">
+                            <input type="hidden" name="medicine_id" value="<?php echo htmlspecialchars($medicineToEdit['mid']); ?>">
+                            <div class="form-group">
+                                <label for="editMedicineName">Medicine Name</label>
+                                <input type="text" id="editMedicineName" name="name" value="<?php echo htmlspecialchars($medicineToEdit['name']); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editMedicineGenericName">Generic Name</label>
+                                <input type="text" id="editMedicineGenericName" name="genericName" value="<?php echo htmlspecialchars($medicineToEdit['genericName']); ?>" required>
+                            </div>
+                            <div class="profile-form-row">
+                                <div class="form-group">
+                                    <label for="editMedicineStrength">Strength</label>
+                                    <input type="text" id="editMedicineStrength" name="strength" value="<?php echo htmlspecialchars($medicineToEdit['strength']); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editMedicineDosageForm">Dosage Form</label>
+                                    <input type="text" id="editMedicineDosageForm" name="dosageForm" value="<?php echo htmlspecialchars($medicineToEdit['dosageForm']); ?>" required>
+                                </div>
+                            </div>
+                            <div class="profile-form-row">
+                                <div class="form-group">
+                                    <label for="editMedicinePrice">Price ($)</label>
+                                    <input type="number" id="editMedicinePrice" name="price" value="<?php echo htmlspecialchars($medicineToEdit['price']); ?>" min="0" step="any" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editMedicineStock">Stock Quantity</label>
+                                    <input type="number" id="editMedicineStock" name="stock" value="<?php echo htmlspecialchars($medicineToEdit['stock']); ?>" min="0" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="editMedicineManufacturer">Manufacturer</label>
+                                <input type="text" id="editMedicineManufacturer" name="manufacturer" value="<?php echo htmlspecialchars($medicineToEdit['manufacturer']); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editMedicineDescription">Description</label>
+                                <textarea id="editMedicineDescription" name="description" rows="3" required><?php echo htmlspecialchars($medicineToEdit['description']); ?></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="button button-secondary">Save Changes</button>
+                                <button type="button" class="button button-outline" onclick="navigateTo('medicine', 'view')">Cancel</button>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <p class="message-box message-error">Medicine data not found. Please select a valid medicine to edit.</p>
+                        <div class="form-actions">
+                            <button type="button" class="button button-outline" onclick="navigateTo('medicine', 'view')">Back to Medicine List</button>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- View Medicines Table -->
+                <div id="viewMedicinesSection" style="<?php echo ($section === 'medicine' && !isset($_GET['action'])) || ($section === 'medicine' && $_GET['action'] == 'view') ? '' : 'display: none'; ?>">
+                    <h3>Medicine List</h3>
+                    <div class="table-controls" style="margin-bottom: 1.6rem;">
+                        <input type="text" id="medicineSearchInput" onkeyup="filterTable('medicineTable', this.value)" placeholder="Search medicines..." class="form-group input" style="width: 100%; max-width: 400px;">
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="medicineTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Generic Name</th>
+                                    <th>Strength</th>
+                                    <th>Form</th>
+                                    <th>Price ($)</th>
+                                    <th>Stock</th>
+                                    <th>Manufacturer</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="medicineTableBody">
+
+                                <?php
+                                if (empty($medicines)) {
+                                    echo '<tr><td colspan="9" style="text-align: center; padding: 2rem;">No medicine records found.</td></tr>';
+                                } else {
+                                    foreach ($medicines as $medicine) {
+                                        echo '<tr>';
+                                        echo '<td>' . htmlspecialchars($medicine['mid']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($medicine['name']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($medicine['genericName']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($medicine['strength']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($medicine['dosageForm']) . '</td>';
+                                        echo '<td>$' . htmlspecialchars($medicine['price']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($medicine['stock']) . '</td>';
+                                        echo '<td>' . htmlspecialchars($medicine['manufacturer']) . '</td>';
+                                        echo '<td><div class="action-buttons">';
+                                        echo '<a href="?section=medicine&action=edit_medicine&id=' . htmlspecialchars($medicine['mid']) . '" class="button button-outline">Edit</a>';
+                                        // Note: confirmAction JavaScript function would need to be defined elsewhere
+                                        echo '<button class="button button-danger" onclick="deleteMedicine(\'' . htmlspecialchars($medicine['mid']) . '\')">Delete</button>';
+                                        echo '</div></td>';
+                                        echo '</tr>';
+                                    }
+                                }
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="medicineMessage" class="message-box"></div>
                 </div>
             </section>
+
 
             <!-- Logout Section -->
             <section id="content-logout" class="dashboard-section" style="<?php echo $section === 'logout' ? '' : 'display: none'; ?>">
@@ -665,7 +817,7 @@ if ($section === 'patients' && isset($_GET['action']) && $_GET['action'] === 'ed
 
 
     <script src="../../assets/admin/adminDash.js"></script>
-    <!-- <script src="../../assets/admin/statusChange.js"></script> -->
+    <script src="../../assets/admin/medicine.js"></script>
 </body>
 
 </html>

@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const overlay = document.getElementById("overlay");
   const menuItems = document.querySelectorAll(".sidebar-menu .menu-item");
 
-
   menuToggle.addEventListener("click", () => {
     sidebar.classList.toggle("active");
     overlay.classList.toggle("active");
@@ -30,12 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   menuItems.forEach((item) => {
     item.addEventListener("click", (event) => {
-      
-      sidebar.classList.remove("active"); 
+      sidebar.classList.remove("active");
       overlay.classList.remove("active");
     });
   });
-
 });
 
 function deleteParient(id) {
@@ -58,20 +55,49 @@ function deleteAppointment(id) {
 }
 
 function updateAppointmentStatus(appointmentId, newStatus) {
-   
-  fetch('../../controller/update_appointment_status.php', {
-    method: 'POST',
+  fetch("../../controller/update_appointment_status.php", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: `id=${appointmentId}&status=${newStatus}`
+    body: `id=${appointmentId}&status=${newStatus}`,
   })
-  .then(response => response.text())
-  .then(data => {
-    // console.log(data); // Optional: log success or failure
-    location.reload(); // Refresh to reflect updated status
-  })
-  .catch(error => {
-    console.error('Error updating appointment status:', error);
+    .then((response) => response.text())
+    .then((data) => {
+      // console.log(data); // Optional: log success or failure
+      location.reload(); // Refresh to reflect updated status
+    })
+    .catch((error) => {
+      console.error("Error updating appointment status:", error);
+    });
+}
+
+function filterAppointments() {
+  const doctorId = document.getElementById("searchDoctorId").value.toLowerCase();
+  const patientId = document.getElementById("searchPatientId").value.toLowerCase();
+  const dateFrom = document.getElementById("dateFrom").value;
+  const dateTo = document.getElementById("dateTo").value;
+  const status = document.getElementById("statusFilter").value.toLowerCase();
+
+  const rows = document.querySelectorAll("#appointmentTable tbody tr");
+
+  rows.forEach((row) => {
+    const columns = row.querySelectorAll("td");
+    if (columns.length < 7) return;
+
+    const rowPatientId = columns[1].innerText.toLowerCase();
+    const rowDoctorId = columns[2].innerText.toLowerCase();
+    const rowDate = columns[6].innerText;
+    const rowStatus = columns[5].innerText.toLowerCase();
+
+    let show = true;
+
+    if (doctorId && !rowDoctorId.includes(doctorId)) show = false;
+    if (patientId && !rowPatientId.includes(patientId)) show = false;
+    if (dateFrom && rowDate < dateFrom) show = false;
+    if (dateTo && rowDate > dateTo) show = false;
+    if (status && rowStatus !== status) show = false;
+
+    row.style.display = show ? "" : "none";
   });
 }

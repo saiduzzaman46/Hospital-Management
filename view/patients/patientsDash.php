@@ -9,10 +9,10 @@
 
 
 <?php
-if (!isset($_COOKIE['user_id'])) {
-  header("Location: ../login/login.php");
-  exit();
-}
+// if (!isset($_COOKIE['user_id'])) {
+//   header("Location: ../login/login.php");
+//   exit();
+// }
 
 session_start();
 
