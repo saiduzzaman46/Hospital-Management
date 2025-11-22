@@ -154,7 +154,6 @@ Each role has its own UI and permissions.
 
 
 ### Patient Dashboard  
-![Patient Dashboard]()
 <img width="1104" height="732" alt="hos-user-dash" src="https://github.com/user-attachments/assets/3f979bc6-6ab0-4727-91c6-3e820b1a91ee" />
 
 ### Admin Dashboard  
